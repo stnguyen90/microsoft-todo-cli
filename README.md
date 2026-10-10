@@ -68,6 +68,7 @@ todo tasks --important            # High priority
 todo tasks --completed            # Done tasks
 todo tasks --all                  # Everything
 todo tasks --top 5 --skip 5       # Paginate (OData $top/$skip)
+todo tasks --steps                # Include checklist items (one API sub-request per task)
 
 # Create
 todo new "Task name"              # Basic
@@ -259,6 +260,10 @@ todo show "Task" --json
   ]
 }
 ```
+
+`steps` is populated only with `--steps`. Without it the array is always empty: fetching checklist
+items costs one API sub-request per task in the list, which is slow and throttle-prone on long
+lists. Read one task's steps with `todo list-steps` instead.
 
 **Write commands return action confirmation:**
 ```bash

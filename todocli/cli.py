@@ -78,7 +78,7 @@ def ls(args):
 
 def lst(args):
     date_fmt = getattr(args, "date_format", "eu")
-    no_steps = getattr(args, "no_steps", False)
+    want_steps = getattr(args, "steps", False)
     show_id = getattr(args, "show_id", False)
     include_completed = getattr(args, "all", False)
     only_completed = getattr(args, "completed", False)
@@ -106,7 +106,7 @@ def lst(args):
     if getattr(args, "overdue", False):
         tasks = [t for t in tasks if t.due_datetime and t.due_datetime.date() < today]
 
-    if not no_steps and tasks:
+    if want_steps and tasks:
         steps_map = wrapper.get_checklist_items_batch(list_id, [t.id for t in tasks])
     else:
         steps_map = {}
@@ -1578,9 +1578,12 @@ def setup_parser():
         )
         _add_list_flag(subparser)
         subparser.add_argument(
-            "--no-steps",
+            "--steps",
             action="store_true",
-            help="Hide checklist items (steps) for faster output",
+            help=(
+                "Fetch checklist items (steps). Costs one API sub-request per task "
+                "in the list, so it is slow and throttle-prone on long lists"
+            ),
         )
         subparser.add_argument(
             "--show-id",

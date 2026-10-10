@@ -89,7 +89,7 @@ def _make_args(**kwargs):
     defaults = {
         "json": False,
         "list_name": "Tasks",
-        "no_steps": False,
+        "steps": False,
         "date_format": "eu",
         "due_today": False,
         "overdue": False,
@@ -169,7 +169,7 @@ class TestJsonOutputLst(unittest.TestCase):
         }
 
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
-            lst(_make_args(json=True))
+            lst(_make_args(json=True, steps=True))
             output = mock_stdout.getvalue()
 
         data = json.loads(output)

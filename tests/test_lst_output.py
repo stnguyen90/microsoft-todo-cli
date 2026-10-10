@@ -20,7 +20,7 @@ def _make_task(title, importance="normal", due_datetime=None, task_id="tid-0"):
 
 def _make_args(
     list_name="Tasks",
-    no_steps=False,
+    steps=False,
     json=False,
     due_today=False,
     overdue=False,
@@ -30,7 +30,7 @@ def _make_args(
 ):
     args = MagicMock()
     args.list_name = list_name
-    args.no_steps = no_steps
+    args.steps = steps
     args.date_format = "eu"
     args.json = json
     args.due_today = due_today
@@ -99,7 +99,7 @@ class TestLstOutput(unittest.TestCase):
         self.assertNotIn("!", output)
 
     @patch("todocli.cli.wrapper")
-    def test_lst_shows_steps_by_default(self, mock_wrapper):
+    def test_lst_shows_steps_with_steps_flag(self, mock_wrapper):
         dt = datetime(2026, 3, 1, 7, 0, 0)
         task = _make_task(
             "Task with steps", importance="high", due_datetime=dt, task_id="t1"
@@ -113,7 +113,7 @@ class TestLstOutput(unittest.TestCase):
         mock_wrapper.get_checklist_items_batch.return_value = {"t1": [step]}
 
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
-            lst(_make_args())
+            lst(_make_args(steps=True))
             output = mock_stdout.getvalue()
 
         self.assertIn("Task with steps !", output)
@@ -121,17 +121,27 @@ class TestLstOutput(unittest.TestCase):
         self.assertIn("[ ] Step 1", output)
 
     @patch("todocli.cli.wrapper")
-    def test_lst_no_steps_flag_hides_steps(self, mock_wrapper):
-        task = _make_task("My task", task_id="t1")
+    def test_lst_omits_steps_by_default(self, mock_wrapper):
+        """Steps are opt-in: the default must not even make the $batch call.
+
+        That call costs one sub-request per task in the list, so skipping it is
+        the whole point of the default.
+        """
+        task = _make_task("Task with steps", task_id="t1")
         mock_wrapper.get_list_id_by_name.return_value = "lid"
         mock_wrapper.get_tasks.return_value = [task]
 
+        step = MagicMock()
+        step.is_checked = False
+        step.display_name = "Step 1"
+        mock_wrapper.get_checklist_items_batch.return_value = {"t1": [step]}
+
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
-            lst(_make_args(no_steps=True))
+            lst(_make_args())
             output = mock_stdout.getvalue()
 
-        self.assertIn("My task", output)
-        # Batch should not have been called
+        self.assertIn("Task with steps", output)
+        self.assertNotIn("[ ] Step 1", output)
         mock_wrapper.get_checklist_items_batch.assert_not_called()
 
     @patch("todocli.cli.wrapper")
@@ -154,7 +164,7 @@ class TestLstOutput(unittest.TestCase):
             _make_task("Seventh", task_id="t6"),
         ]
 
-        args = _make_args(no_steps=True, top=2, skip=5)
+        args = _make_args(top=2, skip=5)
         args.show_id = False
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             lst(args)

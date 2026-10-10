@@ -26,7 +26,7 @@ def _make_args(**kwargs):
     defaults = {
         "json": False,
         "list_name": "Tasks",
-        "no_steps": True,  # Skip steps for faster tests
+        "steps": False,  # steps are opt-in
         "date_format": "eu",
         "due_today": False,
         "overdue": False,

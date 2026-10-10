@@ -100,18 +100,23 @@ class TestChecklistCLIArgParsing(unittest.TestCase):
         self.assertEqual(args.step_name, "Buy eggs")
         self.assertEqual(args.list, "Shopping")
 
-    # lst --no-steps flag
+    # lst steps flags
 
-    def test_lst_no_steps_flag(self):
-        """Test lst command with --no-steps flag"""
-        args = self.parser.parse_args(["lst", "Shopping", "--no-steps"])
+    def test_lst_steps_flag(self):
+        """Test lst command with --steps flag"""
+        args = self.parser.parse_args(["lst", "Shopping", "--steps"])
         self.assertEqual(args.list_name, "Shopping")
-        self.assertTrue(args.no_steps)
+        self.assertTrue(args.steps)
 
-    def test_lst_default_shows_steps(self):
-        """Test lst command defaults to showing steps (no_steps=False)"""
+    def test_lst_defaults_to_omitting_steps(self):
+        """Steps are opt-in, so the default must not request them"""
         args = self.parser.parse_args(["lst", "Shopping"])
-        self.assertFalse(args.no_steps)
+        self.assertFalse(args.steps)
+
+    def test_lst_rejects_removed_no_steps_flag(self):
+        """--no-steps was removed; steps are omitted by default."""
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args(["lst", "Shopping", "--no-steps"])
 
 
 if __name__ == "__main__":

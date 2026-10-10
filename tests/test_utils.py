@@ -143,7 +143,7 @@ def make_mock_args(**kwargs):
     Commonly used defaults:
         - json: False
         - list_name: "Tasks"
-        - no_steps: False
+        - steps: False
         - date_format: "eu"
         - due_today: False
         - overdue: False
@@ -163,7 +163,7 @@ def make_mock_args(**kwargs):
     defaults = {
         "json": False,
         "list_name": "Tasks",
-        "no_steps": False,
+        "steps": False,
         "date_format": "eu",
         "due_today": False,
         "overdue": False,
