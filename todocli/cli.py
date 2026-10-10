@@ -78,7 +78,9 @@ def ls(args):
 
 def lst(args):
     date_fmt = getattr(args, "date_format", "eu")
-    no_steps = getattr(args, "no_steps", False)
+    # Steps are opt-in. Fetching them costs one API sub-request per task in the
+    # list, which is wasted work for the common case of listing titles and ids.
+    want_steps = getattr(args, "steps", False)
     show_id = getattr(args, "show_id", False)
     include_completed = getattr(args, "all", False)
     only_completed = getattr(args, "completed", False)
@@ -106,7 +108,7 @@ def lst(args):
     if getattr(args, "overdue", False):
         tasks = [t for t in tasks if t.due_datetime and t.due_datetime.date() < today]
 
-    if not no_steps and tasks:
+    if want_steps and tasks:
         steps_map = wrapper.get_checklist_items_batch(list_id, [t.id for t in tasks])
     else:
         steps_map = {}
@@ -1577,10 +1579,19 @@ def setup_parser():
             help="List name (default: Tasks)",
         )
         _add_list_flag(subparser)
-        subparser.add_argument(
+        steps_group = subparser.add_mutually_exclusive_group()
+        steps_group.add_argument(
+            "--steps",
+            action="store_true",
+            help=(
+                "Fetch checklist items (steps). Costs one API sub-request per task "
+                "in the list, so it is slow and throttle-prone on long lists"
+            ),
+        )
+        steps_group.add_argument(
             "--no-steps",
             action="store_true",
-            help="Hide checklist items (steps) for faster output",
+            help="No-op; steps are omitted by default. Accepted for compatibility",
         )
         subparser.add_argument(
             "--show-id",
