@@ -74,7 +74,9 @@ todo new "Task name"              # Basic
 todo new "Task" -l Work           # In specific list
 todo new "Task" -d tomorrow       # With due date
 todo new "Task" -r 2h             # With reminder (in 2 hours)
-todo new "Task" -d mon -r 9am     # Due Monday, remind at 9am
+todo new "Task" -d mon -r 9am     # Due Monday; -r 9am is today/tomorrow, not Monday
+todo new "Task" -r "2027-02-27 21:00"    # Reminder at an exact future date and time
+todo new "Task" -r "2027-02-27 9:00 pm"  # Same, 12-hour clock
 todo new "Task" -I                # Important
 todo new "Task" -R daily          # Recurring
 todo new "Task" -R weekly:mon,fri # Recurring on specific days
