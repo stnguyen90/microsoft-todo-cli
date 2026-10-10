@@ -231,3 +231,64 @@ class TestApiTimestampParsing(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestExplicitDateAndTime(unittest.TestCase):
+    """A date and a time in one expression, e.g. '2027-02-27 21:00'.
+
+    Every other format derives its missing fields from datetime.now(), so
+    before these existed there was no way to set a reminder for a specific
+    time more than a day out.
+    """
+
+    def test_iso_date_with_24_hour_time(self):
+        self.assertEqual(parse_datetime("2027-02-27 21:00"), datetime(2027, 2, 27, 21, 0))
+
+    def test_iso_date_with_t_separator(self):
+        self.assertEqual(parse_datetime("2027-02-27T21:00"), datetime(2027, 2, 27, 21, 0))
+
+    def test_iso_date_with_am_pm(self):
+        self.assertEqual(parse_datetime("2027-02-27 9:00 pm"), datetime(2027, 2, 27, 21, 0))
+
+    def test_iso_date_with_compact_am_pm(self):
+        self.assertEqual(parse_datetime("2027-02-27 9pm"), datetime(2027, 2, 27, 21, 0))
+
+    def test_iso_date_single_digit_month_and_day(self):
+        self.assertEqual(parse_datetime("2027-2-7 9:05pm"), datetime(2027, 2, 7, 21, 5))
+
+    def test_eu_date_with_time(self):
+        self.assertEqual(parse_datetime("27.02.2027 21:00"), datetime(2027, 2, 27, 21, 0))
+
+    def test_eu_short_year_with_time(self):
+        self.assertEqual(parse_datetime("27.02.27 9pm"), datetime(2027, 2, 27, 21, 0))
+
+    def test_us_date_with_time(self):
+        self.assertEqual(parse_datetime("02/27/2027 21:00"), datetime(2027, 2, 27, 21, 0))
+
+    def test_us_short_year_with_time(self):
+        self.assertEqual(parse_datetime("02/27/27 9:00 pm"), datetime(2027, 2, 27, 21, 0))
+
+    def test_midnight_and_noon(self):
+        self.assertEqual(parse_datetime("2027-02-27 12:00 am"), datetime(2027, 2, 27, 0, 0))
+        self.assertEqual(parse_datetime("2027-02-27 12:00 pm"), datetime(2027, 2, 27, 12, 0))
+
+    def test_year_is_honoured_not_taken_from_now(self):
+        """The whole point: the result must not be anchored to the current year."""
+        dt = parse_datetime("2027-02-27 21:00")
+        self.assertEqual(dt.year, 2027)
+        self.assertNotEqual(dt.year, datetime.now().year)
+
+    def test_impossible_date_is_rejected(self):
+        with self.assertRaises(ErrorParsingTime):
+            parse_datetime("2027-02-30 10:00")
+
+    def test_out_of_range_hour_is_rejected(self):
+        with self.assertRaises(ErrorParsingTime):
+            parse_datetime("2027-02-27 25:00")
+
+    def test_hour_over_twelve_with_meridiem_is_rejected(self):
+        with self.assertRaises(ErrorParsingTime):
+            parse_datetime("2027-02-27 13:00 pm")
+
+    def test_date_only_still_defaults_to_seven_am(self):
+        self.assertEqual(parse_datetime("2027-02-27"), datetime(2027, 2, 27, 7, 0))

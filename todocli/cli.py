@@ -1460,7 +1460,10 @@ helptext_step_name = """
 
 helptext_reminder = (
     "Set reminder. Formats: 1h, 30m, 1h30m, 9:30, 5:30pm, "
-    "morning (7:00), evening (18:00), tomorrow, 2026-12-24, 24.12.2026"
+    "morning (7:00), evening (18:00), tomorrow, 2026-12-24, 24.12.2026, "
+    "or a date and time together: '2026-12-24 21:00', '2026-12-24 9:00 pm'. "
+    "A bare time is today or tomorrow, so use the combined form for a "
+    "specific time further out."
 )
 
 helptext_due = (

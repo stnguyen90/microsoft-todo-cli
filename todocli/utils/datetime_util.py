@@ -8,7 +8,9 @@ class TimeExpressionNotRecognized(Exception):
         self.message = (
             f"Time expression could not be parsed: {time_str}\n"
             f"Supported formats: 1h, 30m, 9am, 5:30pm, 17:00, tomorrow, monday, mon, "
-            f"DD.MM.YYYY, YYYY-MM-DD, MM/DD/YYYY"
+            f"DD.MM.YYYY, YYYY-MM-DD, MM/DD/YYYY, "
+            f"or a date and a time together: '2027-02-27 21:00', "
+            f"'2027-02-27 9:00 pm', '27.02.2027 21:00', '02/27/2027 9pm'"
         )
         super(TimeExpressionNotRecognized, self).__init__(self.message)
 
@@ -61,8 +63,67 @@ def add_day_if_past(dt: datetime) -> datetime:
         return dt
 
 
+def normalize_year(year_str: str) -> int:
+    """Expand a 2-digit year to 20YY; pass a 4-digit year through."""
+    return int("20" + year_str) if len(year_str) == 2 else int(year_str)
+
+
+def to_24_hour(hour: int, meridiem: Union[str, None]) -> int:
+    """Convert a 12-hour clock reading to 24-hour. No meridiem means 24-hour."""
+    if meridiem is None:
+        return hour
+    if meridiem.lower() == "pm":
+        return hour if hour == 12 else hour + 12
+    return 0 if hour == 12 else hour
+
+
+# hour, optional :minute, optional am/pm
+_TIME_GROUP = r"(\d{1,2})(?::(\d{2}))?\s*([ap]m)?"
+
+# A date and a time in one expression. Unlike the date-only and time-only
+# formats these carry an explicit year, so they can address any point in the
+# future instead of being anchored to datetime.now().
+_DATE_TIME_FORMATS = (
+    # 2027-02-27 21:00 / 2027-02-27T21:00 / 2027-02-27 9:00 pm
+    (r"^(\d{4})-(\d{1,2})-(\d{1,2})[ T]" + _TIME_GROUP + r"$", ("year", "month", "day")),
+    # 27.02.2027 21:00 / 27.02.27 9pm
+    (r"^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})\s+" + _TIME_GROUP + r"$", ("day", "month", "year")),
+    # 02/27/2027 21:00 / 02/27/27 9:00 pm
+    (r"^(\d{1,2})/(\d{1,2})/(\d{2}|\d{4})\s+" + _TIME_GROUP + r"$", ("month", "day", "year")),
+)
+
+
+def parse_date_with_time(datetime_str: str):
+    """Parse an explicit date AND time, e.g. '2027-02-27 21:00'.
+
+    Returns None when the string is not one of these forms so the caller can
+    go on trying the date-only and time-only formats.
+    """
+    for pattern, date_order in _DATE_TIME_FORMATS:
+        match = re.match(pattern, datetime_str, re.IGNORECASE)
+        if match is None:
+            continue
+        date_parts = dict(zip(date_order, match.group(1, 2, 3)))
+        hour = to_24_hour(int(match.group(4)), match.group(6))
+        minute = int(match.group(5)) if match.group(5) else 0
+        # datetime() validates the whole combination, so an impossible date or
+        # hour (2027-02-30, 25:00, 13pm) raises ValueError for the caller to
+        # surface as ErrorParsingTime.
+        return datetime(
+            normalize_year(date_parts["year"]),
+            int(date_parts["month"]),
+            int(date_parts["day"]),
+            hour,
+            minute,
+        )
+    return None
+
+
 def parse_datetime(datetime_str: str):
     try:
+        if (explicit := parse_date_with_time(datetime_str)) is not None:
+            return explicit
+
         if match := re.match(
             r"(?:(\d+)/(\d+)/)?(\d+d)?(\d+h)?(\d+m)?(\d+s)?$",
             datetime_str,
